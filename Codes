@@ -1,0 +1,86 @@
+%Codes for ABC operator: COVID-Vfriants Paper
+clc; clear;
+global Lambda mu  deltaf deltag  xif xig xifg etaf etag etafg sigma gam ... 
+       varphi1 varphi2 psi rho thetaf thetag betaf betag
+
+ day = 1:100;
+ File_Name = 'COVID_CASES_PAKISTAN2.xlsx'; %Change the filename to the right one. 
+ xlRfnge_CONFIRMED =  'B2:B101'; % select the range of data input.
+ CONFIRMED = xlsread(File_Name,xlRfnge_CONFIRMED);
+ plot(day,CONFIRMED,'-ko','MarkerFaceColor','r','linewidth',3)
+ xlabel('Time (days)'),ylabel('Confirmed COVID-19 Cases')
+ dateaxis('x', 2, '1-Jan-2022')
+ hold on
+
+zeta=0.95;
+abc=1-zeta+zeta./gamma(zeta);
+
+Lambda=238181034/(69.37*365); mu=1/(69.37*365);  deltag=0.015;  xig=1/21; xifg=1/21;  etag=0.05; etafg=0.05; sigma=0.15; gam=0.15; 
+varphi1=1.2; varphi2=1.2; thetag=0.0010;
+
+
+betaf=0.0237; betag=0.7571; psi=1.0000; rho=0.0100; xif=0.0133; etaf=0.0020; thetaf=0.9998; deltaf=0.0010; 
+
+t(1)=0; h=0.5; tfinal=100; t=t(1):h:tfinal;
+
+N = ceil((tfinal-t(1))./h);
+
+Sh = (Lambda.*(deltaf + thetaf + mu).*(deltag + thetag + mu))./(psi.*(thetaf + mu).*(deltag + thetag + mu) + rho.*(thetag + mu).*(deltaf + thetaf + mu) + mu.*(deltaf + thetaf + mu).*(deltag + thetag + mu));
+Roc = (betaf.*(mu.*(deltaf + thetaf + mu).*(deltag + thetag + mu) + mu.*sigma.*psi.*(deltaf + thetaf + mu) + rho.*(mu + thetag).*(deltaf + thetaf + mu)).*Sh)./(Lambda.*(deltaf + thetaf + mu).*(deltag + thetag + mu).*(xif + etaf + mu)) 
+Roh =(betag.*(mu.*(deltaf + thetaf + mu).*(deltag + thetag + mu) + mu.*gam.*rho.*(deltag + thetag + mu) + psi.*(mu + thetaf).*(deltag + thetag + mu)).*Sh)./(Lambda.*(deltaf + thetaf + mu).*(deltag + thetag + mu).*(xig + etag + mu)); 
+
+S(1)=175000000; Vf(1)=15000000; Vg(1)=1500000; If(1)=1296527; Ig(1)=250895; Ifg(1)=5000; Rf(1)=0; Rg(1)=0; Rfg(1)=0; D(1)=1296527; 
+%The given FDE under the ABC operator
+f1 =@(t,S,Vf,Vg,If,Ig,Ifg,Rf,Rg,Rfg,D) Lambda - betaf.*S.*(If+Ifg)./(S+Vf+Vg+If+Ig+Ifg+Rf+Rg+Rfg) - betag.*S.*(Ig+Ifg)./(S+Vf+Vg+If+Ig+Ifg+Rf+Rg+Rfg) ...
+       + deltaf.*Vf + deltag.*Vg - (mu + psi +rho).*S;
+f2 =@(t,S,Vf,Vg,If,Ig,Ifg,Rf,Rg,Rfg,D) psi.*S - sigma.*betaf.*Vf.*(If+Ifg)./(S+Vf+Vg+If+Ig+Ifg+Rf+Rg+Rfg)- betag.*Vf.*(Ig+Ifg)./(S+Vf+Vg+If+Ig+Ifg+Rf+Rg+Rfg)- (deltaf + thetaf + mu).*Vf; 
+f3 =@(t,S,Vf,Vg,If,Ig,Ifg,Rf,Rg,Rfg,D) rho.*S - betaf.*Vg.*(If+Ifg)./(S+Vf+Vg+If+Ig+Ifg+Rf+Rg+Rfg) - gam.*betag.*Vg.*(Ig+Ifg)./(S+Vf+Vg+If+Ig+Ifg+Rf+Rg+Rfg)- (deltag + thetag + mu).*Vg; 
+f4 =@(t,S,Vf,Vg,If,Ig,Ifg,Rf,Rg,Rfg,D) betaf.*(S+sigma.*Vf+Vg+Rg).*(If+Ifg)./(S+Vf+Vg+If+Ig+Ifg+Rf+Rg+Rfg) - (xif + etaf +mu).*If- varphi1.*betag.*If.*(Ig+Ifg)./(S+Vf+Vg+If+Ig+Ifg+Rf+Rg+Rfg);
+f5 =@(t,S,Vf,Vg,If,Ig,Ifg,Rf,Rg,Rfg,D) betag.*(S+Vf+gam.*Vg+Rf).*(Ig+Ifg)./(S+Vf+Vg+If+Ig+Ifg+Rf+Rg+Rfg) - (xig + etag +mu).*Ig- varphi2.*betaf.*Ig.*(If+Ifg)./(S+Vf+Vg+If+Ig+Ifg+Rf+Rg+Rfg);
+f6 =@(t,S,Vf,Vg,If,Ig,Ifg,Rf,Rg,Rfg,D) varphi1.*betag.*If.*(Ig+Ifg)./(S+Vf+Vg+If+Ig+Ifg+Rf+Rg+Rfg) + varphi2.*betaf.*Ig.*(If+Ifg)./(S+Vf+Vg+If+Ig+Ifg+Rf+Rg+Rfg)- (xifg + etafg + mu).*Ifg;
+f7 =@(t,S,Vf,Vg,If,Ig,Ifg,Rf,Rg,Rfg,D) thetaf.*Vf + xif.*If - mu.*Rf - betag.*Rf.*(Ig+Ifg)./(S+Vf+Vg+If+Ig+Ifg+Rf+Rg+Rfg); 
+f8 =@(t,S,Vf,Vg,If,Ig,Ifg,Rf,Rg,Rfg,D) thetag.*Vg + xig.*Ig - mu.*Rg - betaf.*Rg.*(If+Ifg)./(S+Vf+Vg+If+Ig+Ifg+Rf+Rg+Rfg);
+f9 =@(t,S,Vf,Vg,If,Ig,Ifg,Rf,Rg,Rfg,D) xifg.*Ifg - mu.*Rfg; 
+f10=@(t,S,Vf,Vg,If,Ig,Ifg,Rf,Rg,Rfg,D) betaf.*(S+sigma.*Vf+Vg+Rg).*(If+Ifg)./(S+Vf+Vg+If+Ig+Ifg+Rf+Rg+Rfg); %For Confirmed COVID-19 cases 
+
+%Solution of the ABC fractional model using the Two-Step-Lagrange polynomial
+for n=1:N
+k=2:n;
+
+S(n+1)=S(1)+((1-zeta)./abc).*f1(t(n),S(n),Vf(n),Vg(n),If(n),Ig(n),Ifg(n),Rf(n),Rg(n),Rfg(n),D(n))+(zeta./abc).*(h.^zeta./gamma(zeta+2)).*sum(((n+1-k).^zeta.*(n-k+2+zeta)-(n-k).^zeta.*(n-k+2+2.*zeta)).* ...
+    f1(t(k),S(k),Vf(k),Vg(k),If(k),Ig(k),Ifg(k),Rf(k),Rg(k),Rfg(k),D(k))-((n+1-k).^(zeta+1)-(n-k).^zeta.*(n-k+1+zeta)).*f1(t(k-1),S(k-1),Vf(k-1),Vg(k-1),If(k-1),Ig(k-1),Ifg(k-1),Rf(k-1),Rg(k-1),Rfg(k-1),D(k-1)));
+
+Vf(n+1)=Vf(1)+((1-zeta)./abc).*f2(t(n),S(n),Vf(n),Vg(n),If(n),Ig(n),Ifg(n),Rf(n),Rg(n),Rfg(n),D(n))+(zeta./abc).*(h.^zeta./gamma(zeta+2)).*sum(((n+1-k).^zeta.*(n-k+2+zeta)-(n-k).^zeta.*(n-k+2+2.*zeta)).* ...
+    f2(t(k),S(k),Vf(k),Vg(k),If(k),Ig(k),Ifg(k),Rf(k),Rg(k),Rfg(k),D(k))-((n+1-k).^(zeta+1)-(n-k).^zeta.*(n-k+1+zeta)).*f2(t(k-1),S(k-1),Vf(k-1),Vg(k-1),If(k-1),Ig(k-1),Ifg(k-1),Rf(k-1),Rg(k-1),Rfg(k-1),D(k-1)));
+
+Vg(n+1)=Vg(1)+((1-zeta)./abc).*f3(t(n),S(n),Vf(n),Vg(n),If(n),Ig(n),Ifg(n),Rf(n),Rg(n),Rfg(n),D(n))+(zeta./abc).*(h.^zeta./gamma(zeta+2)).*sum(((n+1-k).^zeta.*(n-k+2+zeta)-(n-k).^zeta.*(n-k+2+2.*zeta)).* ...
+    f3(t(k),S(k),Vf(k),Vg(k),If(k),Ig(k),Ifg(k),Rf(k),Rg(k),Rfg(k),D(k))-((n+1-k).^(zeta+1)-(n-k).^zeta.*(n-k+1+zeta)).*f3(t(k-1),S(k-1),Vf(k-1),Vg(k-1),If(k-1),Ig(k-1),Ifg(k-1),Rf(k-1),Rg(k-1),Rfg(k-1),D(k-1)));
+
+If(n+1)=If(1)+((1-zeta)./abc).*f4(t(n),S(n),Vf(n),Vg(n),If(n),Ig(n),Ifg(n),Rf(n),Rg(n),Rfg(n),D(n))+(zeta./abc).*(h.^zeta./gamma(zeta+2)).*sum(((n+1-k).^zeta.*(n-k+2+zeta)-(n-k).^zeta.*(n-k+2+2.*zeta)).* ...
+    f4(t(k),S(k),Vf(k),Vg(k),If(k),Ig(k),Ifg(k),Rf(k),Rg(k),Rfg(k),D(k))-((n+1-k).^(zeta+1)-(n-k).^zeta.*(n-k+1+zeta)).*f4(t(k-1),S(k-1),Vf(k-1),Vg(k-1),If(k-1),Ig(k-1),Ifg(k-1),Rf(k-1),Rg(k-1),Rfg(k-1),D(k-1)));
+
+Ig(n+1)=Ig(1)+((1-zeta)./abc).*f5(t(n),S(n),Vf(n),Vg(n),If(n),Ig(n),Ifg(n),Rf(n),Rg(n),Rfg(n),D(n))+(zeta./abc).*(h.^zeta./gamma(zeta+2)).*sum(((n+1-k).^zeta.*(n-k+2+zeta)-(n-k).^zeta.*(n-k+2+2.*zeta)).* ...
+    f5(t(k),S(k),Vf(k),Vg(k),If(k),Ig(k),Ifg(k),Rf(k),Rg(k),Rfg(k),D(k))-((n+1-k).^(zeta+1)-(n-k).^zeta.*(n-k+1+zeta)).*f5(t(k-1),S(k-1),Vf(k-1),Vg(k-1),If(k-1),Ig(k-1),Ifg(k-1),Rf(k-1),Rg(k-1),Rfg(k-1),D(k-1)));
+
+Ifg(n+1)=Ifg(1)+((1-zeta)./abc).*f6(t(n),S(n),Vf(n),Vg(n),If(n),Ig(n),Ifg(n),Rf(n),Rg(n),Rfg(n),D(n))+(zeta./abc).*(h.^zeta./gamma(zeta+2)).*sum(((n+1-k).^zeta.*(n-k+2+zeta)-(n-k).^zeta.*(n-k+2+2.*zeta)).* ...
+    f6(t(k),S(k),Vf(k),Vg(k),If(k),Ig(k),Ifg(k),Rf(k),Rg(k),Rfg(k),D(k))-((n+1-k).^(zeta+1)-(n-k).^zeta.*(n-k+1+zeta)).*f6(t(k-1),S(k-1),Vf(k-1),Vg(k-1),If(k-1),Ig(k-1),Ifg(k-1),Rf(k-1),Rg(k-1),Rfg(k-1),D(k-1)));
+
+Rf(n+1)=Rf(1)+((1-zeta)./abc).*f7(t(n),S(n),Vf(n),Vg(n),If(n),Ig(n),Ifg(n),Rf(n),Rg(n),Rfg(n),D(n))+(zeta./abc).*(h.^zeta./gamma(zeta+2)).*sum(((n+1-k).^zeta.*(n-k+2+zeta)-(n-k).^zeta.*(n-k+2+2.*zeta)).* ...
+    f7(t(k),S(k),Vf(k),Vg(k),If(k),Ig(k),Ifg(k),Rf(k),Rg(k),Rfg(k),D(k))-((n+1-k).^(zeta+1)-(n-k).^zeta.*(n-k+1+zeta)).*f7(t(k-1),S(k-1),Vf(k-1),Vg(k-1),If(k-1),Ig(k-1),Ifg(k-1),Rf(k-1),Rg(k-1),Rfg(k-1),D(k-1)));
+
+Rg(n+1)=Rg(1)+((1-zeta)./abc).*f8(t(n),S(n),Vf(n),Vg(n),If(n),Ig(n),Ifg(n),Rf(n),Rg(n),Rfg(n),D(n))+(zeta./abc).*(h.^zeta./gamma(zeta+2)).*sum(((n+1-k).^zeta.*(n-k+2+zeta)-(n-k).^zeta.*(n-k+2+2.*zeta)).* ...
+    f8(t(k),S(k),Vf(k),Vg(k),If(k),Ig(k),Ifg(k),Rf(k),Rg(k),Rfg(k),D(k))-((n+1-k).^(zeta+1)-(n-k).^zeta.*(n-k+1+zeta)).*f8(t(k-1),S(k-1),Vf(k-1),Vg(k-1),If(k-1),Ig(k-1),Ifg(k-1),Rf(k-1),Rg(k-1),Rfg(k-1),D(k-1)));
+
+Rfg(n+1)=Rfg(1)+((1-zeta)./abc).*f9(t(n),S(n),Vf(n),Vg(n),If(n),Ig(n),Ifg(n),Rf(n),Rg(n),Rfg(n),D(n))+(zeta./abc).*(h.^zeta./gamma(zeta+2)).*sum(((n+1-k).^zeta.*(n-k+2+zeta)-(n-k).^zeta.*(n-k+2+2.*zeta)).* ...
+    f9(t(k),S(k),Vf(k),Vg(k),If(k),Ig(k),Ifg(k),Rf(k),Rg(k),Rfg(k),D(k))-((n+1-k).^(zeta+1)-(n-k).^zeta.*(n-k+1+zeta)).*f9(t(k-1),S(k-1),Vf(k-1),Vg(k-1),If(k-1),Ig(k-1),Ifg(k-1),Rf(k-1),Rg(k-1),Rfg(k-1),D(k-1)));
+
+D(n+1)=D(1)+((1-zeta)./abc).*f10(t(n),S(n),Vf(n),Vg(n),If(n),Ig(n),Ifg(n),Rf(n),Rg(n),Rfg(n),D(n))+(zeta./abc).*(h.^zeta./gamma(zeta+2)).*sum(((n+1-k).^zeta.*(n-k+2+zeta)-(n-k).^zeta.*(n-k+2+2.*zeta)).* ...
+    f10(t(k),S(k),Vf(k),Vg(k),If(k),Ig(k),Ifg(k),Rf(k),Rg(k),Rfg(k),D(k))-((n+1-k).^(zeta+1)-(n-k).^zeta.*(n-k+1+zeta)).*f10(t(k-1),S(k-1),Vf(k-1),Vg(k-1),If(k-1),Ig(k-1),Ifg(k-1),Rf(k-1),Rg(k-1),Rfg(k-1),D(k-1)));
+
+t(n+1)=t(n)+h;
+end
+
+plot(t,D,'-b','linewidth',3);
+%xlabel('Time (days)'),ylabel('Confirmed COVID-19 Cases')
+legend('Pakistan Data','Model')
+hold on
