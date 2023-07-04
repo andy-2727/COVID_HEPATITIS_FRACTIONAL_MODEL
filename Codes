@@ -1,4 +1,4 @@
-%Codes for ABC operator: COVID-Vfriants Paper
+%Codes 
 clc; clear;
 global Lambda mu  deltaf deltag  xif xig xifg etaf etag etafg sigma gam ... 
        varphi1 varphi2 psi rho thetaf thetag betaf betag
